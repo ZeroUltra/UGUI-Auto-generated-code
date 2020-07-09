@@ -2,19 +2,22 @@
 using UnityEditor.IMGUI.Controls;
 using UnityEditor;
 using UnityEngine;
-using UnityEngine.UI;
-using UnityEditor.UI;
-using System.Linq;
 
-namespace UnityEditor.TreeViewExamples
+
+namespace AutoGenerateCode
 {
-    class UITreeView : TreeView
+    public class UITreeView : TreeView
     {
         public event System.Action OnNullSelete; //当没有选择物体
+        public event System.Action<TreeViewItem> OnDoubleClick;
         //当前选择的所有UI控件
         public Dictionary<TreeViewItem, bool> dictTreeItemDatas = new Dictionary<TreeViewItem, bool>();
         public Transform seleteTrans;
 
+        /// <summary>
+        /// 是否子父级关联
+        /// </summary>
+        public bool linkPartentChild = false;
 
         //初始化
         public UITreeView(TreeViewState treeViewState)
@@ -35,7 +38,6 @@ namespace UnityEditor.TreeViewExamples
                 SetupParentsAndChildrenFromDepths(treeRoot0, new List<TreeViewItem>() { root0 });
                 return treeRoot0;
             }
-
             dictTreeItemDatas.Clear();
             //当前选中的
             seleteTrans = Selection.activeGameObject.transform;
@@ -62,17 +64,18 @@ namespace UnityEditor.TreeViewExamples
             //在Hierarchy 中显示选中的物体
             Selection.activeInstanceID = selectedIds[0];
         }
+
         /// <summary>
         /// 自定义UI
         /// </summary>
         /// <param name="args"></param>
         protected override void RowGUI(RowGUIArgs args)
         {
-            //if (Selection.activeGameObject == null) return;
-            //Event evt = Event.current;
+            if (Selection.activeGameObject == null || Helper.dictIDs.Count <= 0) return;
+            Event evt = Event.current;
 
-            ////图标和标签之前的间距的值
-            extraSpaceBeforeIconAndLabel = 20;
+            //图标和标签之前的间距的值
+            extraSpaceBeforeIconAndLabel = 38;
 
             TreeViewItem item = args.item;
 
@@ -81,25 +84,57 @@ namespace UnityEditor.TreeViewExamples
             toggleRect.x += GetContentIndent(item);
             toggleRect.width = 16f;
 
-            //Rect gizmoRect = toggleRect;
-            //gizmoRect.x += 17;
-            //gizmoRect.width = 18f;
-            //Debug.Log(item.displayName);
-            //GUIContent content = new GUIContent(EditorGUIUtility.ObjectContent(null, Helper.GetType(Helper.IDToGameObject(item.id))).image);
-            //GUI.DrawTexture(gizmoRect, content.image);
-            //if (evt.type == EventType.MouseDown && toggleRect.Contains(evt.mousePosition))
-            //    SelectionClick(args.item, false);
+            //绘制图标
+            Rect gizmoRect = toggleRect;
+            gizmoRect.x += 17;
+            gizmoRect.width = 18f;
 
-            EditorGUI.BeginChangeCheck();
-            bool isCheck = EditorGUI.Toggle(toggleRect, dictTreeItemDatas[item]);
-            if (EditorGUI.EndChangeCheck())
+            if (Helper.IDToGameObject(item.id) != null)
             {
-                dictTreeItemDatas[item] = isCheck;
-                CheckChildren(item, isCheck);
+                GUI.DrawTexture(gizmoRect, new GUIContent(EditorGUIUtility.ObjectContent(null, Helper.GetType(Helper.IDToGameObject(item.id)))).image);
             }
+
+
+            if (evt.type == EventType.MouseDown && toggleRect.Contains(evt.mousePosition))
+                SelectionClick(args.item, false);
+
+            //判断双击
+            if (Event.current.isMouse && Event.current.type == EventType.MouseDown && Event.current.clickCount == 2 && args.rowRect.Contains(evt.mousePosition))
+            {
+                OnDoubleClick?.Invoke(item);
+                //Debug.Log(item.displayName);
+            }
+
+            try
+            {
+                EditorGUI.BeginChangeCheck();
+                bool isCheck = EditorGUI.Toggle(toggleRect, dictTreeItemDatas[item]);
+                if (EditorGUI.EndChangeCheck())
+                {
+                    dictTreeItemDatas[item] = isCheck;
+                    if (linkPartentChild)
+                        CheckChildren(item, isCheck);
+                }
+            }
+            catch { }
+
             base.RowGUI(args);
         }
 
+        public void SeleteAll(bool ison)
+        {
+
+            dictTreeItemDatas[rootItem] = ison;
+            CheckChildren(rootItem, ison);
+        }
+        public TreeViewItem GetRootTreeView()
+        {
+            return rootItem;
+        }
+        public TreeViewItem GetRootFirstTreeView()
+        {
+            return rootItem.children[0];
+        }
 
         //递归查询
         private void CheckChildren(TreeViewItem item, bool isCheck)
@@ -128,7 +163,7 @@ namespace UnityEditor.TreeViewExamples
                 {
 
                     var item = new TreeViewItem { id = itemTrans.GetInstanceID(), depth = depth, displayName = itemTrans.name };
-                    item.icon = EditorGUIUtility.ObjectContent(null, Helper.GetType(itemTrans.gameObject)).image as Texture2D;
+                    //item.icon = EditorGUIUtility.ObjectContent(null, Helper.GetType(itemTrans.gameObject)).image as Texture2D;  //有些显示不出来
                     dictTreeItemDatas.Add(item, true);
                     allItems.Add(item);
                     AddTransChildren(itemTrans, depth, allItems);

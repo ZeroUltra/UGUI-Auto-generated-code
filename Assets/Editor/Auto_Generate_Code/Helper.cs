@@ -4,13 +4,21 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using System;
+using System.Reflection;
 
 public class Helper
 {
+    public const string Log_UIGenerate = "<color=#00ff00>[脚本代码提示]:</color>";
+
+    /// <summary>
+    /// 存放 物体 id 字典
+    /// </summary>
     public static Dictionary<int, GameObject> dictIDs = new Dictionary<int, GameObject>();
 
     public static Type GetType(GameObject go)
     {
+        if (go == null) return null;
+
         if (go.GetComponent<Canvas>() != null)
             return typeof(Canvas);
 
@@ -40,6 +48,7 @@ public class Helper
 
         else if (go.GetComponent<Text>() != null)
             return typeof(Text);
+
 
         //if (go.GetComponent<RectTransform>() != null)
         //    return typeof(RectTransform);
@@ -85,8 +94,30 @@ public class Helper
     {
         if (dictIDs.Count > 0)
         {
-            return dictIDs[id];
+            try
+            {
+                return dictIDs[id];
+            }
+            catch
+            {
+                return null;
+            }
         }
         return null;
     }
+
+    public static Assembly GetAssembly()
+    {
+        Assembly[] AssbyCustmList = System.AppDomain.CurrentDomain.GetAssemblies();
+        for (int i = 0; i < AssbyCustmList.Length; i++)
+        {
+            string assbyName = AssbyCustmList[i].GetName().Name;
+            if (assbyName == "Assembly-CSharp")
+            {
+                return AssbyCustmList[i];
+            }
+        }
+        return null;
+    }
+
 }
