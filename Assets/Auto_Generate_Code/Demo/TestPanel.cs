@@ -4,6 +4,7 @@ using UnityEngine.UI;
 
 public class TestPanel:MonoBehaviour
 {
+	[Header("UI")]
 	[SerializeField] Image Image;
 	[SerializeField] Text Text;
 	[SerializeField] RawImage RawImage;
@@ -13,16 +14,17 @@ public class TestPanel:MonoBehaviour
 	[SerializeField] Scrollbar Scrollbar;
 	[SerializeField] InputField InputField;
 	[SerializeField] Dropdown Dropdown;
-	[SerializeField] Image Scroll_View;
+	[SerializeField] ScrollRect Scroll_View;
 
 	private void Start()
 	{
-		Button.onClick.AddListener(Button_OnClick);
+		Button.onClick.AddListener(Button_OnClick);
 		Toggle.onValueChanged.AddListener(Toggle_OnValueChanged);
 		Slider.onValueChanged.AddListener(Slider_OnValueChanged);
 		Scrollbar.onValueChanged.AddListener(Scrollbar_OnValueChanged);
 		InputField.onValueChanged.AddListener(InputField_OnValueChanged);
 		Dropdown.onValueChanged.AddListener(Dropdown_OnValueChanged);
+		Scroll_View.onValueChanged.AddListener(Scroll_View_OnValueChanged);
 	}
 	private void Button_OnClick()
 	{
@@ -48,6 +50,10 @@ public class TestPanel:MonoBehaviour
 	{
 
 	}
+	private void Scroll_View_OnValueChanged(Vector2 detal)
+	{
+
+	}
 
 
 
@@ -64,7 +70,7 @@ public class TestPanel:MonoBehaviour
 		Scrollbar=transform.Find("Scrollbar").GetComponent<Scrollbar>();
 		InputField=transform.Find("InputField").GetComponent<InputField>();
 		Dropdown=transform.Find("Dropdown").GetComponent<Dropdown>();
-		Scroll_View=transform.Find("Scroll View").GetComponent<Image>();
+		Scroll_View=transform.Find("Scroll View").GetComponent<ScrollRect>();
 	}
 #endif
 	#endregion

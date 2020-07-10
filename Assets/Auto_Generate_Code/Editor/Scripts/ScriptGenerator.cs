@@ -55,7 +55,7 @@ namespace AutoGenerateCode
         /// </summary>
         /// <param name="uitreeView"></param>
         /// <returns></returns>
-        public static string StartScriptGenerate(UITreeView uitreeView,bool addEvent)
+        public static string StartScriptGenerate(UITreeView uitreeView, bool addEvent)
         {
             uitreeview = uitreeView;
 
@@ -80,7 +80,7 @@ namespace AutoGenerateCode
                         {
                             //类型 Image Button
                             Type type = Helper.GetType(Helper.IDToGameObject(treeItem.id));
-                            string disName = treeItem.displayName.Replace(" ","_");
+                            string disName = treeItem.displayName.Replace(" ", "_");
                             //添加变量
                             listVariableName.Add(new VariableNameData(type, disName));
                             //添加查找路径
@@ -94,6 +94,7 @@ namespace AutoGenerateCode
                 }
             }
 
+            sb.Append("\t[Header(\"UI\")]\n");
             #region 添加变量
             foreach (var item in listVariableName)
             {
@@ -106,7 +107,7 @@ namespace AutoGenerateCode
             {
                 List<string> listMethodName = new List<string>();
                 sb.Append("\r\n");
-                sb.Append("\tprivate void Start()\n\t{\n\r"); //start 方法
+                sb.Append("\tprivate void Start()\n\t{\n"); //start 方法
                 foreach (var item in listVariableName)
                 {
                     if (hashUIEventType.Contains(item.type))
@@ -116,7 +117,7 @@ namespace AutoGenerateCode
                         {
                             string methodName = $"{item.goName}_OnClick";
                             sb.Append($"onClick.AddListener({methodName});\n");
-                            listMethodName.Add(methodName+"()");
+                            listMethodName.Add(methodName + "()");
                         }
                         else if (item.type == typeof(Toggle))
                         {

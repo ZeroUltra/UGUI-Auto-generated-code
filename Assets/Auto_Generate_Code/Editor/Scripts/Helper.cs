@@ -49,6 +49,8 @@ namespace AutoGenerateCode
 
             else if (uiGo.GetComponent<Scrollbar>() != null)
                 return typeof(Scrollbar);
+            else if (uiGo.GetComponent<ScrollRect>() != null)
+                return typeof(ScrollRect);
 
             else if (uiGo.GetComponent<Image>() != null)
                 return typeof(Image);
