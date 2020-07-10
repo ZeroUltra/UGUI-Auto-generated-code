@@ -21,30 +21,42 @@ namespace AutoGenerateCode
         SearchField m_SearchField;
         public static Dictionary<int, GameObject> dictIDs = new Dictionary<int, GameObject>();
 
-        private Vector2 v2_GuiBtnSize = new Vector2(80, 22);
+        private Vector2 v2_GuiBtnSize = new Vector2(70, 20);
+
         private bool seleteAll = true;
+        private bool tempSeleteAll = true;
         private bool addEvents = true;
+        private bool tempAddEvents = true;
+        private const string SELETEALL = "SELETEALL";
+        private const string ADDEVENTS = "ADDEVENTS";
+
         private string codeStr = "Scrips";
         private string savePath;
-        private string tip;
+
+        //提示信息
+        private string tipStates;
+        private string tipSelete;
+        private MessageType msgSeleteType = MessageType.Info;
 
         [MenuItem("Tools/UI Window")]
         static void ShowWindow()
         {
             var window = GetWindow<UITreeViewWindow>();
             window.titleContent = new GUIContent("UI Window");
-            window.position = new Rect(400, 250, 900, 680);
+            window.position = new Rect(400, 250, 900, 720);
             window.Show();
-            Helper.FindObjIDToDict(FindObjectsOfType<Canvas>());
+            Helper.AddCanvasGoToDict(FindObjectsOfType<Canvas>());
         }
-
+     
         void OnEnable()
         {
+            seleteAll = EditorPrefs.GetBool(SELETEALL, true);
+            addEvents = EditorPrefs.GetBool(ADDEVENTS, true);
 
             if (m_TreeViewState == null)
                 m_TreeViewState = new TreeViewState();
             uiTreeView = new UITreeView(m_TreeViewState);
-            uiTreeView.OnDoubleClick += UiTreeView_OnDoubleClick;
+            //uiTreeView.OnDoubleClick += UiTreeView_OnDoubleClick;
             uiTreeView.ExpandAll();
             m_SearchField = new SearchField();
             m_SearchField.downOrUpArrowKeyPressed += uiTreeView.SetFocusAndEnsureSelectedItem;
@@ -59,13 +71,33 @@ namespace AutoGenerateCode
 
         private void OnFocus()
         {
-            Helper.FindObjIDToDict(FindObjectsOfType<Canvas>());
-            uiTreeView.Reload();
+            Helper.AddCanvasGoToDict(FindObjectsOfType<Canvas>());
+          //  uiTreeView.Reload();
+        }
+        private void OnLostFocus()
+        {
+
+          
         }
 
         #region OnGUI
         void OnGUI()
         {
+            #region 选择提示
+            if (Selection.activeGameObject == null)
+            {
+                tipSelete = "没有选择UI物体";
+                if (msgSeleteType != MessageType.Error)
+                    msgSeleteType = MessageType.Error;
+            }
+            else
+            {
+                tipSelete = "当前选择了:" + Selection.activeGameObject.name;
+                if (msgSeleteType != MessageType.Info)
+                    msgSeleteType = MessageType.Info;
+            }
+            #endregion
+
             //搜索框
             DrawSearchbar();
             //UI Tree view
@@ -78,28 +110,43 @@ namespace AutoGenerateCode
                 {
                     uiTreeView.Reload();
                 }
-                GUILayout.Space(10);
+                GUILayout.Space(5);
+                if (GUILayout.Button("全折叠", GUILayout.Width(50), GUILayout.Height(v2_GuiBtnSize.y)))
+                {
+                    uiTreeView.CollapseAll();
+                    uiTreeView.SetExpanded(uiTreeView.GetRootFirstTreeView().id, true);
+                }
+                GUILayout.Space(5);
+                if (GUILayout.Button("全展开", GUILayout.Width(50), GUILayout.Height(v2_GuiBtnSize.y)))
+                {
+                    uiTreeView.ExpandAll();
+                }
+                GUILayout.Space(5);
+                seleteAll = GUILayout.Toggle(seleteAll, "全选/全不选", GUILayout.Width(80), GUILayout.Height(v2_GuiBtnSize.y));
+                if (tempSeleteAll != seleteAll)
+                {
+                    EditorPrefs.SetBool(SELETEALL, seleteAll);
+                    tempSeleteAll = seleteAll;
 
-                //seleteAll = GUILayout.Toggle(seleteAll, "全选/全不选", GUILayout.Width(v2_GuiBtnSize.x), GUILayout.Height(v2_GuiBtnSize.y));
-                //uiTreeView.SeleteAll(seleteAll);
-
-                GUILayout.Space(10);
+                    uiTreeView.SeleteAll(seleteAll);
+                }
+                GUILayout.Space(5);
                 uiTreeView.linkPartentChild = GUILayout.Toggle(uiTreeView.linkPartentChild, "是否子父关联", GUILayout.Width(100), GUILayout.Height(v2_GuiBtnSize.y));
 
-
                 //-----------------代码预览---------------------------------
-                GUILayout.Space(210);
+                GUILayout.Space(30);
                 if (GUILayout.Button("生成代码", GUILayout.Width(v2_GuiBtnSize.x), GUILayout.Height(v2_GuiBtnSize.y)))
                 {
-                    //Debug.Log(uiTreeView.GetRootTreeView().children[0].displayName);
                     savePath = string.Empty;
-                    codeStr = CreateNewScript.GenerateScript(uiTreeView);
+                    codeStr = ScriptGenerator.StartScriptGenerate(uiTreeView, addEvents);
                 }
                 GUILayout.Space(10);
-                if (addEvents = GUILayout.Toggle(addEvents, "添加UI事件", GUILayout.Width(v2_GuiBtnSize.x), GUILayout.Height(v2_GuiBtnSize.y)))
+                addEvents = GUILayout.Toggle(addEvents, "添加UI事件", GUILayout.Width(80), GUILayout.Height(v2_GuiBtnSize.y));
+                if (addEvents != tempAddEvents)
                 {
-
+                    EditorPrefs.SetBool(ADDEVENTS, addEvents);
                 }
+                #region 绑定到UI GameObject
                 if (GUILayout.Button("绑定到GameObject", GUILayout.Width(120), GUILayout.Height(v2_GuiBtnSize.y)))
                 {
                     if (string.IsNullOrEmpty(savePath))
@@ -108,6 +155,11 @@ namespace AutoGenerateCode
                         return;
                     }
                     System.Type scriptType = Helper.GetAssembly().GetType(Path.GetFileNameWithoutExtension(savePath));
+                    if (scriptType == null)
+                    {
+                        EditorUtility.DisplayDialog("提示", "没有找到代码文件", "Ok");
+                        return;
+                    }
                     var target = Selection.activeGameObject.GetComponent(scriptType);
                     if (target == null)
                     {
@@ -115,23 +167,30 @@ namespace AutoGenerateCode
                         Debug.Log(Helper.Log_UIGenerate + "脚本绑定成功");
                     }
                 }
+                #endregion
             }
-            GUILayout.Space(30);
+            #region 保存提示
             using (new GUILayout.HorizontalScope())
             {
-               // GUILayout.FlexibleSpace();
+                GUILayout.Space(3);
+                using (new GUILayout.VerticalScope(GUILayout.Width(380), GUILayout.Height(50)))
+                {
+                    EditorGUILayout.HelpBox("双击对象可重新选择,且可以在面板中查看属性,当脚本加载会重新绘制 UI Tree View", MessageType.None);
+                    EditorGUILayout.HelpBox("选择提示:" + tipSelete, msgSeleteType);
+                }
+            }
+            using (new GUILayout.HorizontalScope())
+            {
+                GUILayout.Space(20);
                 GUI.color = Color.cyan;
-                if (GUILayout.Button("保存", GUILayout.Width(300)))
+                if (GUILayout.Button("保存", GUILayout.Width(300), GUILayout.Height(40)))
                 {
                     savePath = EditorUtility.SaveFilePanelInProject("选择保存文件夹", Selection.activeGameObject.name, "cs", "Please enter a file name to save the texture to");
                     if (!string.IsNullOrEmpty(savePath))
                     {
-                        //替换类名
-                        codeStr = codeStr.Replace(CreateNewScript.scriptName, Path.GetFileNameWithoutExtension(savePath));
-                        File.WriteAllText(savePath, codeStr);
-                        AssetDatabase.Refresh();
-                        tip = System.DateTime.Now.ToString()+" 位于:"+savePath;
-                        Debug.Log(Helper.Log_UIGenerate + "脚本生成成功");
+                        tipStates = ScriptGenerator.SaveScript(codeStr, savePath);
+                        ShowNotification(new GUIContent("脚本生成成功:" + savePath));
+                        Helper.AwaitToDo(800, RemoveNotification);
                     }
                     else
                     {
@@ -139,14 +198,16 @@ namespace AutoGenerateCode
                     }
                 }
                 GUI.color = Color.white;
-                GUILayout.Space(50);
-                EditorGUILayout.HelpBox("代码保存提示,保存时间:"+tip, MessageType.Info);
-                // GUILayout.FlexibleSpace();
+                GUILayout.Space(40);
+                EditorGUILayout.HelpBox("提示:" + tipStates, MessageType.Info);
             }
+            #endregion
         }
-        /// <summary>
-        /// 绘制搜索框
-        /// </summary>
+
+       
+         /// <summary>
+         /// 绘制搜索框
+         /// </summary>
         void DrawSearchbar()
         {
             GUILayout.BeginHorizontal(EditorStyles.toolbar);
@@ -156,6 +217,7 @@ namespace AutoGenerateCode
             GUILayout.EndHorizontal();
         }
 
+        Vector2 lastScroll = Vector2.zero;
         /// <summary>
         /// 树状图和代码UI
         /// </summary>
@@ -170,15 +232,17 @@ namespace AutoGenerateCode
             {
                 Rect rect = new Rect(10, 50, 400, 520);
                 GUILayout.Box("", GUILayout.Width(rect.width), GUILayout.Height(rect.height));
-                uiTreeView.OnGUI(new Rect(rect.x, rect.y, rect.width - 10, rect.height));
+                uiTreeView.OnGUI(new Rect(rect.x, rect.y, rect.width - 10, rect.height - 5));
                 //------------
                 GUILayout.Space(15);
-                using (new GUILayout.VerticalScope(EditorStyles.helpBox, GUILayout.Height(rect.height)))
+                using (var scrollview = new GUILayout.ScrollViewScope(lastScroll, EditorStyles.helpBox, GUILayout.Height(rect.height)))
                 {
+                    lastScroll = scrollview.scrollPosition;
                     GUILayout.Label(codeStr);
                 }
             }
         }
+
         #endregion
     }
 }

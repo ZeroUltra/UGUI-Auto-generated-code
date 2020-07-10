@@ -55,15 +55,15 @@ namespace AutoGenerateCode
             SetupParentsAndChildrenFromDepths(treeRoot, allItems);
             return treeRoot;
         }
-        /// <summary>
-        /// 当选中item时候
-        /// </summary>
-        /// <param name="selectedIds"></param>
-        protected override void SelectionChanged(IList<int> selectedIds)
-        {
-            //在Hierarchy 中显示选中的物体
-            Selection.activeInstanceID = selectedIds[0];
-        }
+        ///// <summary>
+        ///// 当选中item时候
+        ///// </summary>
+        ///// <param name="selectedIds"></param>
+        //protected override void SelectionChanged(IList<int> selectedIds)
+        //{
+        //    //在Hierarchy 中显示选中的物体
+        //    Selection.activeInstanceID = selectedIds[0];
+        //}
 
         /// <summary>
         /// 自定义UI
@@ -102,7 +102,7 @@ namespace AutoGenerateCode
             if (Event.current.isMouse && Event.current.type == EventType.MouseDown && Event.current.clickCount == 2 && args.rowRect.Contains(evt.mousePosition))
             {
                 OnDoubleClick?.Invoke(item);
-                //Debug.Log(item.displayName);
+                Selection.activeInstanceID = item.id;
             }
 
             try
@@ -123,10 +123,11 @@ namespace AutoGenerateCode
 
         public void SeleteAll(bool ison)
         {
-
             dictTreeItemDatas[rootItem] = ison;
             CheckChildren(rootItem, ison);
+
         }
+      
         public TreeViewItem GetRootTreeView()
         {
             return rootItem;
@@ -141,10 +142,10 @@ namespace AutoGenerateCode
         {
             if (item.hasChildren)
             {
-                foreach (var itemChren in item.children)
+                foreach (var itemChild in item.children)
                 {
-                    dictTreeItemDatas[itemChren] = isCheck;
-                    CheckChildren(itemChren, isCheck);
+                    dictTreeItemDatas[itemChild] = isCheck;
+                    CheckChildren(itemChild, isCheck);
                 }
             }
         }
