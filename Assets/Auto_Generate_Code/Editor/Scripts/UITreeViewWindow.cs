@@ -16,10 +16,12 @@ namespace AutoGenerateCode
         // (i.e. it still gets serialized/deserialized)
         [SerializeField] TreeViewState m_TreeViewState;
 
-        // The TreeView is not serializable it should be reconstructed from the tree data.
+        public static Dictionary<int, GameObject> dictIDs = new Dictionary<int, GameObject>();
+
+
         UITreeView uiTreeView;
         SearchField m_SearchField;
-        public static Dictionary<int, GameObject> dictIDs = new Dictionary<int, GameObject>();
+       
 
         private Vector2 v2_GuiBtnSize = new Vector2(70, 20);
 
@@ -63,21 +65,14 @@ namespace AutoGenerateCode
         }
 
         //当双击
-        private void UiTreeView_OnDoubleClick(TreeViewItem obj)
-        {
-            uiTreeView.Reload();
-        }
-
+        //private void UiTreeView_OnDoubleClick(int treeID)
+        //{
+        //    uiTreeView.Reload();
+        //}
 
         private void OnFocus()
         {
             Helper.AddCanvasGoToDict(FindObjectsOfType<Canvas>());
-          //  uiTreeView.Reload();
-        }
-        private void OnLostFocus()
-        {
-
-          
         }
 
         #region OnGUI

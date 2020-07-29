@@ -1,13 +1,16 @@
-﻿using System.Collections.Generic;
-using UnityEditor.IMGUI.Controls;
+﻿using System.Collections;
+using System.Collections.Generic;
 using UnityEditor;
+using UnityEditor.IMGUI.Controls;
 using UnityEngine;
+
 
 
 namespace AutoGenerateCode
 {
-    public class UITreeView : TreeView
+    public class UITreeview2 : TreeView
     {
+
         public event System.Action OnNullSelete; //当没有选择物体
         public event System.Action<int> OnDoubleClick;
         //当前选择的所有UI控件
@@ -20,7 +23,7 @@ namespace AutoGenerateCode
         public bool linkPartentChild = false;
 
         //初始化
-        public UITreeView(TreeViewState treeViewState)
+        public UITreeview2(TreeViewState treeViewState)
             : base(treeViewState)
         {
             Reload();
@@ -36,20 +39,21 @@ namespace AutoGenerateCode
             if (Selection.activeGameObject == null)
             {
                 OnNullSelete?.Invoke();
-                var treeRoot0 = new TreeViewItem { id = 0, depth = -1, displayName = "Root" };
-                var root0 = new TreeViewItem { id = 1, depth = 0, displayName = "请选择一个对象" };
-                SetupParentsAndChildrenFromDepths(treeRoot0, new List<TreeViewItem>() { root0 });
+                UITreeViewItem treeRoot0 = new UITreeViewItem { id = 0, depth = -1, displayName = "Root"};
+
+                 var root0 = new UITreeViewItem { id = 1, depth = 0, displayName = "请选择一个对象" };
+                 SetupParentsAndChildrenFromDepths(treeRoot0, new List<TreeViewItem>() { root0 });
                 return treeRoot0;
             }
             dictTreeItemDatas.Clear();
             //当前选中的
             seleteTrans = Selection.activeGameObject.transform;
             //生命一个根目录
-            var treeRoot = new TreeViewItem { id = 0, depth = -1, displayName = "Root" };
+            var treeRoot = new UITreeViewItem { id = 0, depth = -1, displayName = "Root" };
             List<TreeViewItem> allItems = new List<TreeViewItem>();
 
             int depth = 0;
-            var root = new TreeViewItem { id = seleteTrans.GetInstanceID(), depth = depth, displayName = seleteTrans.name };
+            var root = new UITreeViewItem { id = seleteTrans.GetInstanceID(), depth = depth, displayName = seleteTrans.name };
             allItems.Add(root);
             dictTreeItemDatas.Add(root, true);
             //添加所有子物体
@@ -81,7 +85,7 @@ namespace AutoGenerateCode
             //图标和标签之前的间距的值
             extraSpaceBeforeIconAndLabel = 38;
 
-            TreeViewItem item = args.item;
+            UITreeViewItem item = args.item as UITreeViewItem;
 
             //图标和checkbox 区域
             Rect toggleRect = args.rowRect;
@@ -99,16 +103,8 @@ namespace AutoGenerateCode
                 GUI.DrawTexture(gizmoRect, new GUIContent(EditorGUIUtility.ObjectContent(null, Helper.GetType(Helper.IDToGameObject(item.id)))).image);
             }
 
-
             if (evt.type == EventType.MouseDown && toggleRect.Contains(evt.mousePosition))
                 SelectionClick(args.item, false);
-
-            ////判断双击
-            //if (Event.current.isMouse && Event.current.type == EventType.MouseDown && Event.current.clickCount == 2 && args.rowRect.Contains(evt.mousePosition))
-            //{
-            //    OnDoubleClick?.Invoke(item);
-            //    Selection.activeInstanceID = item.id;
-            //}
 
             try
             {
@@ -213,5 +209,6 @@ namespace AutoGenerateCode
             return rootItem.children[0];
         }
     }
-}
 
+}
+}
