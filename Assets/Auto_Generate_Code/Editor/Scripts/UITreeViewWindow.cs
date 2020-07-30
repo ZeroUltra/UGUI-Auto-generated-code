@@ -19,7 +19,7 @@ namespace AutoGenerateCode
         public static Dictionary<int, GameObject> dictIDs = new Dictionary<int, GameObject>();
 
 
-        UITreeView uiTreeView;
+        UITreeview2 uiTreeView;
         SearchField m_SearchField;
        
 
@@ -45,7 +45,7 @@ namespace AutoGenerateCode
         {
             var window = GetWindow<UITreeViewWindow>();
             window.titleContent = new GUIContent("UI Window");
-            window.position = new Rect(400, 250, 900, 720);
+            window.position = new Rect(400, 250, 1000, 720);
             window.Show();
             Helper.AddCanvasGoToDict(FindObjectsOfType<Canvas>());
         }
@@ -57,7 +57,7 @@ namespace AutoGenerateCode
 
             if (m_TreeViewState == null)
                 m_TreeViewState = new TreeViewState();
-            uiTreeView = new UITreeView(m_TreeViewState);
+            uiTreeView = new UITreeview2(m_TreeViewState);
             //uiTreeView.OnDoubleClick += UiTreeView_OnDoubleClick;
             uiTreeView.ExpandAll();
             m_SearchField = new SearchField();
@@ -73,6 +73,7 @@ namespace AutoGenerateCode
         private void OnFocus()
         {
             Helper.AddCanvasGoToDict(FindObjectsOfType<Canvas>());
+           // uiTreeView.Reload();
         }
 
         #region OnGUI
@@ -109,7 +110,7 @@ namespace AutoGenerateCode
                 if (GUILayout.Button("全折叠", GUILayout.Width(50), GUILayout.Height(v2_GuiBtnSize.y)))
                 {
                     uiTreeView.CollapseAll();
-                    uiTreeView.SetExpanded(uiTreeView.GetRootFirstTreeView().id, true);
+                    uiTreeView.SetExpanded(uiTreeView.RootTreeView.id, true);
                 }
                 GUILayout.Space(5);
                 if (GUILayout.Button("全展开", GUILayout.Width(50), GUILayout.Height(v2_GuiBtnSize.y)))
@@ -122,7 +123,6 @@ namespace AutoGenerateCode
                 {
                     EditorPrefs.SetBool(SELETEALL, seleteAll);
                     tempSeleteAll = seleteAll;
-
                     uiTreeView.SeleteAll(seleteAll);
                 }
                 GUILayout.Space(5);
@@ -220,15 +220,16 @@ namespace AutoGenerateCode
         {
             using (new GUILayout.HorizontalScope())
             {
-                GUILayout.Label("UI Tree View", EditorStyles.whiteLargeLabel, GUILayout.Width(410));
+                GUILayout.Label("UI Tree View", EditorStyles.whiteLargeLabel, GUILayout.Width(470));
                 GUILayout.Label("Code Preview", EditorStyles.whiteLargeLabel);
             }
             using (new GUILayout.HorizontalScope())
             {
-                Rect rect = new Rect(10, 50, 400, 520);
+                //---------tree view-----
+                Rect rect = new Rect(10, 50, 460, 520);
                 GUILayout.Box("", GUILayout.Width(rect.width), GUILayout.Height(rect.height));
                 uiTreeView.OnGUI(new Rect(rect.x, rect.y, rect.width - 10, rect.height - 5));
-                //------------
+                //------code preivew------
                 GUILayout.Space(15);
                 using (var scrollview = new GUILayout.ScrollViewScope(lastScroll, EditorStyles.helpBox, GUILayout.Height(rect.height)))
                 {

@@ -152,5 +152,69 @@ namespace AutoGenerateCode
             callback?.Invoke();
 
         }
+        
+    }
+
+    /// <summary>
+    /// 自定义比较 compoent 排序
+    /// </summary>
+    public class ComponentSort : IComparable<ComponentSort>
+    {
+        public string componentName;
+        public int componIndex = 0;
+        public ComponentSort(string _componName)
+        {
+            this.componentName = _componName;
+            switch (_componName)
+            {
+                case "Canvas":
+                    componIndex = 10;
+                    break;
+                case "Button":
+                    componIndex = 9;
+                    break;
+                case "InputField":
+                    componIndex = 8;
+                    break;
+                case "Toggle":
+                    componIndex = 7;
+                    break;
+                case "Slider":
+                    componIndex = 6;
+                    break;
+                case "Dropdown":
+                    componIndex = 5;
+                    break;
+                case "Scrollbar":
+                    componIndex = 4;
+                    break;
+                case "ScrollRect":
+                    componIndex = 3;
+                    break;
+                case "Image":
+                    componIndex = 2;
+                    break;
+                case "RawImage":
+                    componIndex = 1;
+                    break;
+                case "Text":
+                    componIndex = 0;
+                    break;
+                case "RectTransform":
+                    componIndex = -1;
+                    break;
+                case "CanvasRenderer":
+                    componIndex = -2;
+                    break;
+            }
+           
+        }
+
+        public int CompareTo(ComponentSort other)
+        {
+            if (other.componIndex > componIndex) return 1;
+            if (other.componIndex < componIndex) return -1;
+            else return 0;
+        }
     }
 }

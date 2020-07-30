@@ -19,11 +19,11 @@ namespace AutoGenerateCode
         //要替换的类名
         public const string ScriptName = "#ScriptName#";
 
-        private static UITreeView uitreeview;
+        private static UITreeview2 uiTreeview;
 
         //存放要添加事件的UI类型
-        private static HashSet<Type> hashUIEventType = new HashSet<Type>() {
-            typeof(Button), typeof(Toggle), typeof(InputField), typeof(Dropdown),typeof(Slider),typeof(Scrollbar),typeof(ScrollRect)
+        private static HashSet<string> hashUIEventType = new HashSet<string>() {
+            "Button", "Toggle", "InputField", "Dropdown","Slider","Scrollbar","ScrollRect"
         };
 
 
@@ -36,7 +36,7 @@ namespace AutoGenerateCode
         {
             StringBuilder sb = new StringBuilder();
             List<string> listpath = new List<string>();
-            while (treeItem.parent != null && treeItem.parent.id != uitreeview.GetRootTreeView().id)
+            while (treeItem.parent != null && treeItem.parent.id != uiTreeview.RootTreeView.id)
             {
                 listpath.Add(treeItem.displayName);
                 treeItem = treeItem.parent;
@@ -55,106 +55,111 @@ namespace AutoGenerateCode
         /// </summary>
         /// <param name="uitreeView"></param>
         /// <returns></returns>
-        public static string StartScriptGenerate(UITreeView uitreeView, bool addEvent)
+        public static string StartScriptGenerate(UITreeview2 uitreeView, bool addEvent)
         {
-            uitreeview = uitreeView;
+            uiTreeview = uitreeView;
 
             StringBuilder sb = new StringBuilder();
             sb.Append(Str_Using);
             sb.Append(Str_Class);
             sb.Append("\n{\n");
 
-            //添加数据
             List<VariableNameData> listVariableName = new List<VariableNameData>();//变量名
             List<PathData> listVariablePath = new List<PathData>();//变量名路径
-            foreach (var item in uitreeView.dictTreeItemDatas)
-            {
-                if (item.Value)
-                {
-                    TreeViewItem treeItem = item.Key;
-                    if (treeItem.displayName == "Root") continue; //排除Root
+            List<VariableNameData> listProperty = new List<VariableNameData>();//属性
 
-                    try
+            List<VariableNameData> listEvent = new List<VariableNameData>();//事件
+
+            foreach (var item in uiTreeview.allItems)
+            {
+                UITreeViewItem uitreeitem = item as UITreeViewItem;
+                if (uitreeitem.isVariable)
+                {
+                    //类型 Image Button
+                    //Type type = Helper.GetType(Helper.IDToGameObject(uitreeitem.id));
+                    string type = uitreeitem.CurrentComponent[uitreeitem.CurrentSeleteComponentIndex];
+                    string disName = "m_" + uitreeitem.displayName.Replace(" ", "_");
+                    //添加变量
+                    listVariableName.Add(new VariableNameData(type, disName));
+                    //添加查找路径
+                    listVariablePath.Add(new PathData(disName, GetTreeItemFullPath(uitreeitem).ToString(), type));
+                    if (uitreeitem.isProperty)
                     {
-                        if (Helper.IDToGameObject(treeItem.id) != null)
-                        {
-                            //类型 Image Button
-                            Type type = Helper.GetType(Helper.IDToGameObject(treeItem.id));
-                            string disName = treeItem.displayName.Replace(" ", "_");
-                            //添加变量
-                            listVariableName.Add(new VariableNameData(type, disName));
-                            //添加查找路径
-                            listVariablePath.Add(new PathData(disName, GetTreeItemFullPath(treeItem).ToString(), type.Name));
-                        }
+                        listProperty.Add(new VariableNameData(type, disName));
                     }
-                    catch (System.Exception)
+
+                    if (uitreeitem.isUseEvent)
                     {
-                        Debug.LogError(treeItem.id + " " + treeItem.displayName);
+                        if (hashUIEventType.Contains(type))
+                            listEvent.Add(new VariableNameData(type, disName));
                     }
                 }
             }
 
-            sb.Append("\t[Header(\"UI\")]\n");
+
             #region 添加变量
             foreach (var item in listVariableName)
             {
-                sb.Append($"\t[SerializeField] {item.type.Name} {item.goName};\r\n");
+                sb.Append($"\t[SerializeField] {item.type} {item.goName};\r\n");
             }
             #endregion
-
-            #region 添加UI事件
-            if (addEvent)
+            sb.Append("\r\n");
+            #region 添加属性
+            foreach (var item in listProperty)
             {
-                List<string> listMethodName = new List<string>();
+                sb.Append($"\tpublic {item.type} {item.goName.Remove(0, 2)} {{get {{ return {item.goName};}} }} \r\n");
+            }
+            #endregion
+            #region 添加事件
+            if (listEvent.Count > 0)
+            {
                 sb.Append("\r\n");
                 sb.Append("\tprivate void Start()\n\t{\n"); //start 方法
-                foreach (var item in listVariableName)
+                List<string> listMethodName = new List<string>();
+                foreach (var item in listEvent)
                 {
-                    if (hashUIEventType.Contains(item.type))
+                    sb.Append($"\t\t{item.goName}.");
+                    if (item.type == nameof(Button))
                     {
-                        sb.Append($"\t\t{item.goName}.");
-                        if (item.type == typeof(Button))
-                        {
-                            string methodName = $"{item.goName}_OnClick";
-                            sb.Append($"onClick.AddListener({methodName});\n");
-                            listMethodName.Add(methodName + "()");
-                        }
-                        else if (item.type == typeof(Toggle))
-                        {
-                            string methodName = $"{item.goName}_OnValueChanged";
-                            sb.Append($"onValueChanged.AddListener({methodName});\n");
-                            listMethodName.Add(methodName + "(bool isOn)");
-                        }
-                        else if (item.type == typeof(InputField))
-                        {
-                            string methodName = $"{item.goName}_OnValueChanged";
-                            sb.Append($"onValueChanged.AddListener({methodName});\n");
-                            listMethodName.Add(methodName + "(string arg)");
-                        }
-                        else if (item.type == typeof(Slider))
-                        {
-                            string methodName = $"{item.goName}_OnValueChanged";
-                            sb.Append($"onValueChanged.AddListener({methodName});\n");
-                            listMethodName.Add(methodName + "(float value)");
-                        }
-                        else if (item.type == typeof(Dropdown))
-                        {
-                            string methodName = $"{item.goName}_OnValueChanged";
-                            sb.Append($"onValueChanged.AddListener({methodName});\n");
-                            listMethodName.Add(methodName + "(int index)");
-                        }
-                        else if (item.type == typeof(Scrollbar))
-                        {
-                            string methodName = $"{item.goName}_OnValueChanged";
-                            sb.Append($"onValueChanged.AddListener({methodName});\n");
-                            listMethodName.Add(methodName + "(float value)");
-                        }
-                        else if (item.type == typeof(ScrollRect))
-                        {
-                            string methodName = $"{item.goName}_OnValueChanged";
-                            sb.Append($"onValueChanged.AddListener({methodName});\n");
-                            listMethodName.Add(methodName + "(Vector2 detal)");
-                        }
+                        string methodName = $"{item.goName}_OnClick";
+                        sb.Append($"onClick.AddListener({methodName});\n");
+                        listMethodName.Add(methodName + "()");
+                    }
+                    else if (item.type == nameof(Toggle))
+                    {
+                        string methodName = $"{item.goName}_OnValueChanged";
+                        sb.Append($"onValueChanged.AddListener({methodName});\n");
+                        listMethodName.Add(methodName + "(bool isOn)");
+                    }
+                    else if (item.type == nameof(InputField))
+                    {
+                        string methodName = $"{item.goName}_OnValueChanged";
+                        sb.Append($"onValueChanged.AddListener({methodName});\n");
+                        listMethodName.Add(methodName + "(string arg)");
+                    }
+                    else if (item.type == nameof(Slider))
+                    {
+                        string methodName = $"{item.goName}_OnValueChanged";
+                        sb.Append($"onValueChanged.AddListener({methodName});\n");
+                        listMethodName.Add(methodName + "(float value)");
+                    }
+                    else if (item.type == nameof(Dropdown))
+                    {
+                        string methodName = $"{item.goName}_OnValueChanged";
+                        sb.Append($"onValueChanged.AddListener({methodName});\n");
+                        listMethodName.Add(methodName + "(int index)");
+                    }
+                    else if (item.type == nameof(Scrollbar))
+                    {
+                        string methodName = $"{item.goName}_OnValueChanged";
+                        sb.Append($"onValueChanged.AddListener({methodName});\n");
+                        listMethodName.Add(methodName + "(float value)");
+                    }
+                    else if (item.type == nameof(ScrollRect))
+                    {
+                        string methodName = $"{item.goName}_OnValueChanged";
+                        sb.Append($"onValueChanged.AddListener({methodName});\n");
+                        listMethodName.Add(methodName + "(Vector2 detal)");
                     }
                 }
                 sb.Append("\t}\n");
@@ -167,8 +172,8 @@ namespace AutoGenerateCode
             }
             #endregion
 
-            sb.Append("\r\n\r\n\r\n");
             #region 添加Reset方法 查询路径
+            sb.Append("\r\n\r\n\r\n");
             sb.Append("\t#region 用于寻找控件,当控件丢失,点击脚本齿轮->Reset菜单可恢复,也可重新编写下面的路径代码\r\n");
             sb.Append("#if UNITY_EDITOR\n\tprivate void Reset()\n");
             sb.Append("\t{\n");
@@ -198,6 +203,7 @@ namespace AutoGenerateCode
         {
             try
             {
+                //替换脚本名
                 codeStr = codeStr.Replace(ScriptName, Path.GetFileNameWithoutExtension(destfile));
                 File.WriteAllText(destfile, codeStr);
                 AssetDatabase.Refresh();
@@ -215,9 +221,9 @@ namespace AutoGenerateCode
 
         private struct VariableNameData
         {
-            public Type type;
+            public string type;
             public string goName;
-            public VariableNameData(Type _type, string _goName)
+            public VariableNameData(string _type, string _goName)
             {
                 this.type = _type;
                 this.goName = _goName;
