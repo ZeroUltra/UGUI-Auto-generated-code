@@ -19,7 +19,7 @@ namespace AutoGenerateCode
         //要替换的类名
         public const string ScriptName = "#ScriptName#";
 
-        private static UITreeview2 uiTreeview;
+        private static UITreeview uiTreeview;
 
         //存放要添加事件的UI类型
         private static HashSet<string> hashUIEventType = new HashSet<string>() {
@@ -55,7 +55,7 @@ namespace AutoGenerateCode
         /// </summary>
         /// <param name="uitreeView"></param>
         /// <returns></returns>
-        public static string StartScriptGenerate(UITreeview2 uitreeView, bool addEvent)
+        public static string StartScriptGenerate(UITreeview uitreeView)
         {
             uiTreeview = uitreeView;
 
@@ -77,7 +77,7 @@ namespace AutoGenerateCode
                 {
                     //类型 Image Button
                     //Type type = Helper.GetType(Helper.IDToGameObject(uitreeitem.id));
-                    string type = uitreeitem.CurrentComponent[uitreeitem.CurrentSeleteComponentIndex];
+                    string type = uitreeitem.CurrentGoComponents[uitreeitem.CurrentSeleteComponentIndex];
                     string disName = "m_" + uitreeitem.displayName.Replace(" ", "_");
                     //添加变量
                     listVariableName.Add(new VariableNameData(type, disName));

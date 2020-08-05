@@ -15,110 +15,81 @@ namespace AutoGenerateCode
     {
         public const string Log_UIGenerate = "<color=#00ff00>[脚本代码提示]:</color>";
 
-        /// <summary>
-        /// 存放所有Canvas下的物体和ID
-        /// </summary>
-        public static Dictionary<int, GameObject> dictIDs = new Dictionary<int, GameObject>();
+        ///// <summary>
+        ///// 获取物体的类型
+        ///// </summary>
+        ///// <param name="uigo">必须是ui go</param>
+        ///// <returns></returns>
+        //public static Type GetType(GameObject uiGo)
+        //{
+        //    if (uiGo == null) return null;
 
-        /// <summary>
-        /// 获取物体的类型
-        /// </summary>
-        /// <param name="uigo">必须是ui go</param>
-        /// <returns></returns>
-        public static Type GetType(GameObject uiGo)
+        //    if (uiGo.GetComponent<Canvas>() != null)
+        //        return typeof(Canvas);
+
+        //    if (uiGo.GetComponent<Button>() != null)
+        //        return typeof(Button);
+
+        //    else if (uiGo.GetComponent<InputField>() != null)
+        //        return typeof(InputField);
+
+        //    else if (uiGo.GetComponent<Toggle>() != null)
+        //        return typeof(Toggle);
+
+        //    else if (uiGo.GetComponent<Slider>() != null)
+        //        return typeof(Slider);
+
+        //    else if (uiGo.GetComponent<Dropdown>() != null)
+        //        return typeof(Dropdown);
+
+        //    else if (uiGo.GetComponent<Scrollbar>() != null)
+        //        return typeof(Scrollbar);
+        //    else if (uiGo.GetComponent<ScrollRect>() != null)
+        //        return typeof(ScrollRect);
+
+        //    else if (uiGo.GetComponent<Image>() != null)
+        //        return typeof(Image);
+
+        //    else if (uiGo.GetComponent<RawImage>() != null)
+        //        return typeof(RawImage);
+
+        //    else if (uiGo.GetComponent<Text>() != null)
+        //        return typeof(Text);
+
+
+        //    else return typeof(RectTransform);
+        //}
+
+        public static Type GetTypeWithName(string typeName)
         {
-            if (uiGo == null) return null;
-
-            if (uiGo.GetComponent<Canvas>() != null)
-                return typeof(Canvas);
-
-            if (uiGo.GetComponent<Button>() != null)
-                return typeof(Button);
-
-            else if (uiGo.GetComponent<InputField>() != null)
-                return typeof(InputField);
-
-            else if (uiGo.GetComponent<Toggle>() != null)
-                return typeof(Toggle);
-
-            else if (uiGo.GetComponent<Slider>() != null)
-                return typeof(Slider);
-
-            else if (uiGo.GetComponent<Dropdown>() != null)
-                return typeof(Dropdown);
-
-            else if (uiGo.GetComponent<Scrollbar>() != null)
-                return typeof(Scrollbar);
-            else if (uiGo.GetComponent<ScrollRect>() != null)
-                return typeof(ScrollRect);
-
-            else if (uiGo.GetComponent<Image>() != null)
-                return typeof(Image);
-
-            else if (uiGo.GetComponent<RawImage>() != null)
-                return typeof(RawImage);
-
-            else if (uiGo.GetComponent<Text>() != null)
-                return typeof(Text);
-
-
-            //if (go.GetComponent<RectTransform>() != null)
-            //    return typeof(RectTransform);
-
-            else return typeof(RectTransform);
-        }
-
-        /// <summary>
-        /// 将所有UI 控件添加到字典中
-        /// </summary>
-        /// <param name="canvasTranss"></param>
-        public static void AddCanvasGoToDict(Canvas[] canvasTranss)
-        {
-            dictIDs.Clear();
-            for (int i = 0; i < canvasTranss.Length; i++)
+            switch (typeName)
             {
-                Transform itemUIgo = canvasTranss[i].transform;
-                dictIDs.Add(itemUIgo.GetInstanceID(), itemUIgo.gameObject);
-                RecursiveTrans(itemUIgo);
-            }
-        }
-        private static void RecursiveTrans(Transform trans)
-        {
-            if (trans.childCount > 0)
-            {
-                for (int i = 0; i < trans.childCount; i++)
-                {
-                    Transform item = trans.GetChild(i);
-                    try
-                    {
-                        dictIDs.Add(item.GetInstanceID(), item.gameObject);
-                    }
-                    catch (System.Exception e)
-                    {
-                        Debug.LogError(item.name);
-                    }
-                    RecursiveTrans(item);
-                }
-            }
-        }
-
-        /// <summary>
-        /// 根据id 查找物体
-        /// </summary>
-        /// <param name="id">transform ID</param>
-        /// <returns></returns>
-        public static GameObject IDToGameObject(int id)
-        {
-            if (dictIDs.Count > 0)
-            {
-                try
-                {
-                    return dictIDs[id];
-                }
-                catch
-                {
-                    return null;
-                }
+                case "Canvas":
+                    return typeof(Canvas);
+                case "Button":
+                    return typeof(Button);
+                case "InputField":
+                    return typeof(InputField);
+                case "Toggle":
+                    return typeof(Toggle);
+                case "Slider":
+                    return typeof(Slider);
+                case "Dropdown":
+                    return typeof(Dropdown);
+                case "Scrollbar":
+                    return typeof(Scrollbar);
+                case "ScrollRect":
+                    return typeof(ScrollRect);
+                case "Image":
+                    return typeof(Image);
+                case "RawImage":
+                    return typeof(RawImage);
+                case "Text":
+                    return typeof(Text);
+                case "RectTransform":
+                    return typeof(RectTransform);
+                case "CanvasRenderer":
+                    return typeof(CanvasRenderer);
             }
             return null;
         }
@@ -146,13 +117,11 @@ namespace AutoGenerateCode
             return DateTime.Now.ToString();
         }
 
-        public static async void AwaitToDo(int millis,System.Action callback)
+        public static async void AwaitToDo(int millis, System.Action callback)
         {
             await Task.Delay(millis);
             callback?.Invoke();
-
         }
-        
     }
 
     /// <summary>
@@ -207,7 +176,7 @@ namespace AutoGenerateCode
                     componIndex = -2;
                     break;
             }
-           
+
         }
 
         public int CompareTo(ComponentSort other)

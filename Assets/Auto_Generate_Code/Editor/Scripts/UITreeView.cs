@@ -1,17 +1,43 @@
-﻿using System.Collections.Generic;
-using UnityEditor.IMGUI.Controls;
+﻿using System.Collections;
+using System.Collections.Generic;
 using UnityEditor;
+using UnityEditor.IMGUI.Controls;
 using UnityEngine;
+
 
 
 namespace AutoGenerateCode
 {
-    public class UITreeView : TreeView
+    public class UITreeview : TreeView
     {
+
+        #region 事件
         public event System.Action OnNullSelete; //当没有选择物体
         public event System.Action<int> OnDoubleClick;
+        #endregion
+
+
+        #region 属性
+        public TreeViewItem RootTreeView
+        {
+            get { return rootItem; }
+        }
+
+        public TreeViewItem RootFirstTreeView
+        {
+            get
+            {
+                if (rootItem != null)
+                    return rootItem.children[0];
+                else return null;
+            }
+        }
+        #endregion
+
+
+        public List<TreeViewItem> allItems;
+
         //当前选择的所有UI控件
-        public Dictionary<TreeViewItem, bool> dictTreeItemDatas = new Dictionary<TreeViewItem, bool>();
         public Transform seleteTrans;
 
         /// <summary>
@@ -19,12 +45,12 @@ namespace AutoGenerateCode
         /// </summary>
         public bool linkPartentChild = false;
 
+
         //初始化
-        public UITreeView(TreeViewState treeViewState)
-            : base(treeViewState)
+        public UITreeview(TreeViewState treeViewState) : base(treeViewState)
         {
             Reload();
-            rowHeight = 18f; //行高
+            rowHeight = 20f; //行高
         }
 
         /// <summary>
@@ -36,38 +62,27 @@ namespace AutoGenerateCode
             if (Selection.activeGameObject == null)
             {
                 OnNullSelete?.Invoke();
-                var treeRoot0 = new TreeViewItem { id = 0, depth = -1, displayName = "Root" };
-                var root0 = new TreeViewItem { id = 1, depth = 0, displayName = "请选择一个对象" };
-                SetupParentsAndChildrenFromDepths(treeRoot0, new List<TreeViewItem>() { root0 });
+                TreeViewItem treeRoot0 = new TreeViewItem(0, -1, "Root");
+                SetupParentsAndChildrenFromDepths(treeRoot0, new List<TreeViewItem>() { new TreeViewItem(100, 0, "请选择一个对象") });
                 return treeRoot0;
             }
-            dictTreeItemDatas.Clear();
+
             //当前选中的
             seleteTrans = Selection.activeGameObject.transform;
             //生命一个根目录
-            var treeRoot = new TreeViewItem { id = 0, depth = -1, displayName = "Root" };
-            List<TreeViewItem> allItems = new List<TreeViewItem>();
+            var treeRoot = new UITreeViewItem { id = 0, depth = -1, displayName = "Root" };
+            allItems = new List<TreeViewItem>();
 
             int depth = 0;
-            var root = new TreeViewItem { id = seleteTrans.GetInstanceID(), depth = depth, displayName = seleteTrans.name };
+            var root = new UITreeViewItem { id = seleteTrans.GetInstanceID(), depth = depth, displayName = seleteTrans.name, gameObject = seleteTrans.gameObject };
             allItems.Add(root);
-            dictTreeItemDatas.Add(root, true);
+
             //添加所有子物体
-            AddTransChildren(seleteTrans, depth, allItems);
+            BuildChildItemRecursive(seleteTrans, depth, allItems);
 
             SetupParentsAndChildrenFromDepths(treeRoot, allItems);
             return treeRoot;
         }
-
-        ///// <summary>
-        ///// 当选中item时候
-        ///// </summary>
-        ///// <param name="selectedIds"></param>
-        //protected override void SelectionChanged(IList<int> selectedIds)
-        //{
-        //    //在Hierarchy 中显示选中的物体
-        //    Selection.activeInstanceID = selectedIds[0];
-        //}
 
         /// <summary>
         /// 自定义UI
@@ -75,55 +90,100 @@ namespace AutoGenerateCode
         /// <param name="args"></param>
         protected override void RowGUI(RowGUIArgs args)
         {
-            if (Selection.activeGameObject == null || Helper.dictIDs.Count <= 0) return;
-            Event evt = Event.current;
-
-            //图标和标签之前的间距的值
-            extraSpaceBeforeIconAndLabel = 38;
-
-            TreeViewItem item = args.item;
-
-            //图标和checkbox 区域
-            Rect toggleRect = args.rowRect;
-            toggleRect.x += GetContentIndent(item);
-            toggleRect.width = 16f;
-
-            //绘制图标
-            Rect gizmoRect = toggleRect;
-            gizmoRect.x += 17;
-            gizmoRect.width = 18f;
-
-            //绘制图标
-            if (Helper.IDToGameObject(item.id) != null)
+            if (Selection.activeGameObject != null)
             {
-                GUI.DrawTexture(gizmoRect, new GUIContent(EditorGUIUtility.ObjectContent(null, Helper.GetType(Helper.IDToGameObject(item.id)))).image);
-            }
+                Event evt = Event.current;
 
+                UITreeViewItem item = args.item as UITreeViewItem;
+                if (item == null) return;
 
-            if (evt.type == EventType.MouseDown && toggleRect.Contains(evt.mousePosition))
-                SelectionClick(args.item, false);
+                #region 变量框
+                Rect togVariable = args.rowRect;
+                togVariable.x += GetContentIndent(item);
+                togVariable.width = 16f;
 
-            ////判断双击
-            //if (Event.current.isMouse && Event.current.type == EventType.MouseDown && Event.current.clickCount == 2 && args.rowRect.Contains(evt.mousePosition))
-            //{
-            //    OnDoubleClick?.Invoke(item);
-            //    Selection.activeInstanceID = item.id;
-            //}
+                Rect togLable = togVariable;
+                togLable.x += 16;
+                togLable.width = 28;
+                GUI.Label(togLable, "变量", EditorStyles.whiteLabel);
 
-            try
-            {
                 EditorGUI.BeginChangeCheck();
-                bool isCheck = EditorGUI.Toggle(toggleRect, dictTreeItemDatas[item]);
+                bool isTogVariable = EditorGUI.Toggle(togVariable, item.isVariable);
                 if (EditorGUI.EndChangeCheck())
                 {
-                    dictTreeItemDatas[item] = isCheck;
+                    item.isVariable = isTogVariable;
                     if (linkPartentChild)
-                        CheckChildren(item, isCheck);
+                        CheckChildRecursive(item, isTogVariable);
                 }
-            }
-            catch { }
+                #endregion
 
-            base.RowGUI(args);
+                #region 属性框
+                Rect togPropetty = togLable;
+                togPropetty.x += 35;
+                togPropetty.width = 16f;
+
+                Rect togLablePropetty = togPropetty;
+                togLablePropetty.x += 16;
+                togLablePropetty.width = 28;
+                GUI.color = Color.cyan;
+                GUI.Label(togLablePropetty, "属性", EditorStyles.label);
+                GUI.color = Color.white;
+                EditorGUI.BeginChangeCheck();
+                bool isTogPropetty = EditorGUI.Toggle(togPropetty, item.isProperty);
+                if (EditorGUI.EndChangeCheck())
+                {
+                    item.isProperty = isTogPropetty;
+                }
+                #endregion
+
+                #region 事件框
+                Rect togEvent = togLablePropetty;
+                togEvent.x += 35;
+                togEvent.width = 16f;
+
+                Rect togLableTogEvent = togEvent;
+                togLableTogEvent.x += 16;
+                togLableTogEvent.width = 28;
+                GUI.color = Color.yellow;
+                GUI.Label(togLableTogEvent, "事件", EditorStyles.whiteLabel);
+                GUI.color = Color.white;
+
+                EditorGUI.BeginChangeCheck();
+                bool isTogEvent = EditorGUI.Toggle(togEvent, item.isUseEvent);
+                if (EditorGUI.EndChangeCheck())
+                {
+                    item.isUseEvent = isTogEvent;
+                }
+                #endregion
+
+                #region 枚举框
+                Rect enumRect = togLableTogEvent;
+                enumRect.x += 42;
+                enumRect.width = 100;
+                //ScaleMode scaleMode=ScaleMode.ScaleAndCrop;
+                item.CurrentSeleteComponentIndex = EditorGUI.Popup(enumRect, item.CurrentSeleteComponentIndex, item.CurrentGoComponents);
+                #endregion
+
+                //if (evt.type == EventType.MouseDown && togVariable.Contains(evt.mousePosition))
+                //    SelectionClick(item, false);
+
+                args.rowRect = new Rect(new Vector2(args.rowRect.x + 252, args.rowRect.y), args.rowRect.size);
+
+                //图标和标签之前的间距的值
+                extraSpaceBeforeIconAndLabel = 36;
+                //绘制图标
+                Rect gizmoRect = args.rowRect;
+                gizmoRect.x += GetContentIndent(item) + 16;
+                gizmoRect.width = 16f;
+                gizmoRect.height = 16f;
+                //绘制图标
+                GUI.DrawTexture(gizmoRect, new GUIContent(EditorGUIUtility.ObjectContent(null, Helper.GetTypeWithName(item.CurrentSeleteComponentName))).image);
+                base.RowGUI(args);
+            }
+            else
+            {
+                base.RowGUI(args);
+            }
         }
 
         /// <summary>
@@ -137,46 +197,21 @@ namespace AutoGenerateCode
             Selection.activeInstanceID = id;
         }
 
-        public void SeleteAll(bool ison)
+        /// <summary>
+        /// 设置子物体状态
+        /// </summary>
+        /// <param name="item"></param>
+        /// <param name="isCheck"></param>
+        private void CheckChildRecursive(UITreeViewItem item, bool isOn)
         {
-            //dictTreeItemDatas[rootItem] = ison;
-            CheckChildren2(rootItem, ison);
-
-        }
-
-        private void CheckChildren2(TreeViewItem item, bool isCheck)
-        {
-            if (IsExpanded(item.id))
-            {
-                List<TreeViewItem> treeChilld = item.children;
-                for (int i = 0; i < treeChilld.Count; i++)
-                {
-                    dictTreeItemDatas[treeChilld[i]] = isCheck;
-                    CheckChildren2(treeChilld[i], isCheck);
-                }
-                dictTreeItemDatas[item] = isCheck;
-            }
-            else
-            {
-                dictTreeItemDatas[item] = isCheck;
-            }
-            //foreach (var itemChild in item.children)
-            //{
-            //    dictTreeItemDatas[itemChild] = isCheck;
-            //    CheckChildren2(itemChild, isCheck);
-            //}
-            Debug.Log(IsExpanded(item.id) + " " + item.displayName);
-        }
-
-        //递归查询
-        private void CheckChildren(TreeViewItem item, bool isCheck)
-        {
+            item.isVariable = isOn;
             if (item.hasChildren)
             {
                 foreach (var itemChild in item.children)
                 {
-                    dictTreeItemDatas[itemChild] = isCheck;
-                    CheckChildren(itemChild, isCheck);
+                    UITreeViewItem uitreeitem = (itemChild as UITreeViewItem);
+                    uitreeitem.isVariable = isOn;
+                    CheckChildRecursive(uitreeitem, isOn);
                 }
             }
         }
@@ -187,31 +222,29 @@ namespace AutoGenerateCode
         /// <param name="rootTrans"></param>
         /// <param name="depth"></param>
         /// <param name="allItems"></param>
-        private void AddTransChildren(Transform rootTrans, int depth, List<TreeViewItem> allItems)
+        private void BuildChildItemRecursive(Transform rootTrans, int depth, List<TreeViewItem> allItems)
         {
             if (rootTrans.childCount > 0)
             {
                 depth++;
                 foreach (Transform itemTrans in rootTrans)
                 {
-
-                    var item = new TreeViewItem { id = itemTrans.GetInstanceID(), depth = depth, displayName = itemTrans.name };
+                    var item = new UITreeViewItem { id = itemTrans.GetInstanceID(), depth = depth, displayName = itemTrans.name, gameObject = itemTrans.gameObject };
                     //item.icon = EditorGUIUtility.ObjectContent(null, Helper.GetType(itemTrans.gameObject)).image as Texture2D;  //有些显示不出来
-                    dictTreeItemDatas.Add(item, true);
                     allItems.Add(item);
-                    AddTransChildren(itemTrans, depth, allItems);
+                    BuildChildItemRecursive(itemTrans, depth, allItems);
                 }
             }
         }
 
-        public TreeViewItem GetRootTreeView()
+        /// <summary>
+        /// 设置全选状态
+        /// </summary>
+        /// <param name="ison"></param>
+        public void SeleteAll(bool ison)
         {
-            return rootItem;
-        }
-        public TreeViewItem GetRootFirstTreeView()
-        {
-            return rootItem.children[0];
+            CheckChildRecursive(RootFirstTreeView as UITreeViewItem, ison);
         }
     }
-}
 
+}

@@ -31,10 +31,17 @@ namespace AutoGenerateCode
         /// </summary>
         public int CurrentSeleteComponentIndex { get; set; } = 0;
 
+        public string CurrentSeleteComponentName
+        {
+            get
+            {
+                return CurrentGoComponents[CurrentSeleteComponentIndex];
+            }
+        }
         /// <summary>
         /// 当前物体上的Components类型
         /// </summary>
-        public string[] CurrentComponent
+        public string[] CurrentGoComponents
         {
             get
             {
@@ -62,8 +69,6 @@ namespace AutoGenerateCode
         public UITreeViewItem() : base()
         {
         }
-
-
 
     }
 }
