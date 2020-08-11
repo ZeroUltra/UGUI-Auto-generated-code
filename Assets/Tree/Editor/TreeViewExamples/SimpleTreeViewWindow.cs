@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEditor.IMGUI.Controls;
 
 
@@ -26,6 +26,7 @@ namespace UnityEditor.TreeViewExamples
 			m_TreeView = new SimpleTreeView(m_TreeViewState);
 			m_SearchField = new SearchField ();
 			m_SearchField.downOrUpArrowKeyPressed += m_TreeView.SetFocusAndEnsureSelectedItem;
+
 		}
 
 		void OnGUI ()

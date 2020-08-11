@@ -18,6 +18,10 @@ public class Test : MonoBehaviour
 
     private void Start()
     {
+
+
+
+
         Component[] components = GetComponents<Component>();
         foreach (var item in components)
         {

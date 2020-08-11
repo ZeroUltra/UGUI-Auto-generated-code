@@ -5,7 +5,7 @@ using UnityEngine.UI;
 using System;
 using System.Reflection;
 using System.Threading.Tasks;
-
+using UnityEditor;
 namespace AutoGenerateCode
 {
     /// <summary>
@@ -111,6 +111,17 @@ namespace AutoGenerateCode
             }
             return null;
         }
+
+        /// <summary>
+        /// 通过transform组件id 查找到物体
+        /// </summary>
+        /// <param name="transformID"></param>
+        /// <returns></returns>
+        public static GameObject FindGameObjectWithID(int transformID)
+        {
+            return (EditorUtility.InstanceIDToObject(transformID) as Transform).gameObject;
+        }
+
 
         public static string GetCurrentTime()
         {

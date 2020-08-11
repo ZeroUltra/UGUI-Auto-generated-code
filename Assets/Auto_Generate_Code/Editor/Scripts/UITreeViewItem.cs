@@ -8,7 +8,6 @@ namespace AutoGenerateCode
 {
     public class UITreeViewItem : TreeViewItem
     {
-
         public GameObject gameObject { get; set; }
 
         /// <summary>
@@ -26,6 +25,7 @@ namespace AutoGenerateCode
         /// </summary>
         public bool isUseEvent { get; set; } = false;
 
+
         /// <summary>
         /// 当前选择的component索引
         /// </summary>
@@ -38,6 +38,7 @@ namespace AutoGenerateCode
                 return CurrentGoComponents[CurrentSeleteComponentIndex];
             }
         }
+
         /// <summary>
         /// 当前物体上的Components类型
         /// </summary>
@@ -69,6 +70,5 @@ namespace AutoGenerateCode
         public UITreeViewItem() : base()
         {
         }
-
     }
 }

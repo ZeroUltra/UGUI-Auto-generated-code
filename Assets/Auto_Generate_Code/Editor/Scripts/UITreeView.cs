@@ -45,12 +45,15 @@ namespace AutoGenerateCode
         /// </summary>
         public bool linkPartentChild = false;
 
+        private UITreeViewState uitreeViewState;
 
         //初始化
         public UITreeview(TreeViewState treeViewState) : base(treeViewState)
         {
+            uitreeViewState = treeViewState as UITreeViewState;
             Reload();
             rowHeight = 20f; //行高
+
         }
 
         /// <summary>
@@ -59,6 +62,7 @@ namespace AutoGenerateCode
         /// <returns></returns>
         protected override TreeViewItem BuildRoot()
         {
+
             if (Selection.activeGameObject == null)
             {
                 OnNullSelete?.Invoke();
@@ -81,6 +85,8 @@ namespace AutoGenerateCode
             BuildChildItemRecursive(seleteTrans, depth, allItems);
 
             SetupParentsAndChildrenFromDepths(treeRoot, allItems);
+
+
             return treeRoot;
         }
 
@@ -202,16 +208,22 @@ namespace AutoGenerateCode
         /// </summary>
         /// <param name="item"></param>
         /// <param name="isCheck"></param>
-        private void CheckChildRecursive(UITreeViewItem item, bool isOn)
+        private void CheckChildRecursive(UITreeViewItem item, bool isOn, bool isVariable = false, bool isProperty = false, bool isEvent = false)
         {
-            item.isVariable = isOn;
+            if (isVariable) item.isVariable = isOn;
+            else if (isProperty) item.isProperty = isOn;
+            else if (isEvent) item.isUseEvent = isOn;
+
             if (item.hasChildren)
             {
                 foreach (var itemChild in item.children)
                 {
                     UITreeViewItem uitreeitem = (itemChild as UITreeViewItem);
-                    uitreeitem.isVariable = isOn;
-                    CheckChildRecursive(uitreeitem, isOn);
+                    if (isVariable) uitreeitem.isVariable = isOn;
+                    else if (isProperty) uitreeitem.isProperty = isOn;
+                    else if (isEvent) uitreeitem.isUseEvent = isOn;
+
+                    CheckChildRecursive(uitreeitem, isOn, isVariable, isProperty, isEvent);
                 }
             }
         }
@@ -238,12 +250,28 @@ namespace AutoGenerateCode
         }
 
         /// <summary>
-        /// 设置全选状态
+        /// 设置变量全选状态
         /// </summary>
-        /// <param name="ison"></param>
-        public void SeleteAll(bool ison)
+        /// <param name="isall"></param>
+        public void SetVariableState(bool isall)
         {
-            CheckChildRecursive(RootFirstTreeView as UITreeViewItem, ison);
+            CheckChildRecursive(RootFirstTreeView as UITreeViewItem, isall, isVariable: true);
+        }
+        /// <summary>
+        /// 设置属性旋转状态
+        /// </summary>
+        /// <param name="isall"></param>
+        public void SetPropertyState(bool isall)
+        {
+            CheckChildRecursive(RootFirstTreeView as UITreeViewItem, isall, isProperty: true);
+        }
+        /// <summary>
+        /// 设置事件选择状态
+        /// </summary>
+        /// <param name="isall"></param>
+        public void SetEventState(bool isall)
+        {
+            CheckChildRecursive(RootFirstTreeView as UITreeViewItem, isall, isEvent: true);
         }
     }
 
