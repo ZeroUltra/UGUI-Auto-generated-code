@@ -34,7 +34,9 @@ namespace AutoGenerateCode
         }
         #endregion
 
-
+        /// <summary>
+        /// 所有的tree item
+        /// </summary>
         public List<TreeViewItem> allItems;
 
         //当前选择的所有UI控件
@@ -46,6 +48,10 @@ namespace AutoGenerateCode
         public bool linkPartentChild = false;
 
         private UITreeViewState uitreeViewState;
+        private bool isFirstInit = false;
+        private TreeViewItem currRenameTreeItem;
+
+
 
         //初始化
         public UITreeview(TreeViewState treeViewState) : base(treeViewState)
@@ -53,7 +59,16 @@ namespace AutoGenerateCode
             uitreeViewState = treeViewState as UITreeViewState;
             Reload();
             rowHeight = 20f; //行高
-
+            if (isFirstInit) ExpandAll();
+            else
+            {
+                SetExpanded(0, true);
+                foreach (var item in allItems)
+                {
+                    UITreeViewItem uitreeitem = (item as UITreeViewItem);
+                    SetExpanded(uitreeitem.id, uitreeitem.isExpand);
+                }
+            }
         }
 
         /// <summary>
@@ -62,7 +77,6 @@ namespace AutoGenerateCode
         /// <returns></returns>
         protected override TreeViewItem BuildRoot()
         {
-
             if (Selection.activeGameObject == null)
             {
                 OnNullSelete?.Invoke();
@@ -77,15 +91,25 @@ namespace AutoGenerateCode
             var treeRoot = new UITreeViewItem { id = 0, depth = -1, displayName = "Root" };
             allItems = new List<TreeViewItem>();
 
-            int depth = 0;
-            var root = new UITreeViewItem { id = seleteTrans.GetInstanceID(), depth = depth, displayName = seleteTrans.name, gameObject = seleteTrans.gameObject };
-            allItems.Add(root);
-
-            //添加所有子物体
-            BuildChildItemRecursive(seleteTrans, depth, allItems);
+            //判断原来有么有数据
+            List<TreeViewItem> tempitems;
+            if (uitreeViewState.GetAllTreeItemData(out tempitems))
+            {
+                //Debug.Log("原来有数据 从json中加载数据");
+                allItems.AddRange(tempitems);
+                isFirstInit = false;
+            }
+            else
+            {
+                isFirstInit = true;
+                int depth = 0;
+                var root = new UITreeViewItem { id = seleteTrans.GetInstanceID(), depth = depth, displayName = seleteTrans.name, gameObject = seleteTrans.gameObject };
+                allItems.Add(root);
+                //添加所有子物体
+                BuildChildItemRecursive(seleteTrans, depth, allItems);
+            }
 
             SetupParentsAndChildrenFromDepths(treeRoot, allItems);
-
 
             return treeRoot;
         }
@@ -119,7 +143,9 @@ namespace AutoGenerateCode
                 {
                     item.isVariable = isTogVariable;
                     if (linkPartentChild)
-                        CheckChildRecursive(item, isTogVariable);
+                    {
+                        CheckChildRecursive(item, isTogVariable,isVariable:true);
+                    }
                 }
                 #endregion
 
@@ -139,6 +165,10 @@ namespace AutoGenerateCode
                 if (EditorGUI.EndChangeCheck())
                 {
                     item.isProperty = isTogPropetty;
+                    if (linkPartentChild)
+                    {
+                        CheckChildRecursive(item, isTogPropetty, isProperty: true);
+                    }
                 }
                 #endregion
 
@@ -159,6 +189,10 @@ namespace AutoGenerateCode
                 if (EditorGUI.EndChangeCheck())
                 {
                     item.isUseEvent = isTogEvent;
+                    if (linkPartentChild)
+                    {
+                        CheckChildRecursive(item, isTogEvent, isEvent: true);
+                    }
                 }
                 #endregion
 
@@ -184,7 +218,9 @@ namespace AutoGenerateCode
                 gizmoRect.height = 16f;
                 //绘制图标
                 GUI.DrawTexture(gizmoRect, new GUIContent(EditorGUIUtility.ObjectContent(null, Helper.GetTypeWithName(item.CurrentSeleteComponentName))).image);
+
                 base.RowGUI(args);
+
             }
             else
             {
@@ -202,6 +238,27 @@ namespace AutoGenerateCode
             OnDoubleClick?.Invoke(id);
             Selection.activeInstanceID = id;
         }
+
+      
+        //重命名
+        protected override bool CanRename(TreeViewItem item)
+        {
+            //Debug.Log(item.displayName);
+            currRenameTreeItem = item;
+            BeginRename(item);
+            return base.CanRename(item);
+        }
+        protected override void RenameEnded(RenameEndedArgs args)
+        {
+            //base.RenameEnded(args);
+            args.acceptedRename = true;
+            string newname = args.newName;
+            GameObject go = Helper.FindGameObjectWithID(args.itemID);
+            go.name = newname;
+            currRenameTreeItem.displayName = newname;
+
+        }
+
 
         /// <summary>
         /// 设置子物体状态
@@ -222,7 +279,6 @@ namespace AutoGenerateCode
                     if (isVariable) uitreeitem.isVariable = isOn;
                     else if (isProperty) uitreeitem.isProperty = isOn;
                     else if (isEvent) uitreeitem.isUseEvent = isOn;
-
                     CheckChildRecursive(uitreeitem, isOn, isVariable, isProperty, isEvent);
                 }
             }
@@ -248,6 +304,11 @@ namespace AutoGenerateCode
                 }
             }
         }
+
+
+
+
+
 
         /// <summary>
         /// 设置变量全选状态

@@ -8,6 +8,9 @@ namespace AutoGenerateCode
 {
     public class UITreeViewItem : TreeViewItem
     {
+
+        public bool isExpand { get; set; } = false;
+
         public GameObject gameObject { get; set; }
 
         /// <summary>
@@ -24,7 +27,6 @@ namespace AutoGenerateCode
         /// 是否添加事件
         /// </summary>
         public bool isUseEvent { get; set; } = false;
-
 
         /// <summary>
         /// 当前选择的component索引
@@ -50,7 +52,8 @@ namespace AutoGenerateCode
                 Component[] components = this.gameObject.GetComponents<Component>();
                 for (int i = 0; i < components.Length; i++)
                 {
-                    coms.Add(new ComponentSort(components[i].GetType().Name));
+                    if (components[i] != null)
+                        coms.Add(new ComponentSort(components[i].GetType().Name));
                 }
                 coms.Sort();
                 string[] strs = new string[coms.Count];

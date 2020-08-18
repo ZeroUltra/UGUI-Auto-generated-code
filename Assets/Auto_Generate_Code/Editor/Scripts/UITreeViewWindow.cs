@@ -22,7 +22,7 @@ namespace AutoGenerateCode
         UITreeview uiTreeView;
 
 
-        SearchField m_SearchField;
+          SearchField m_SearchField;
 
         //变量
         private bool variableAll = true;
@@ -42,7 +42,7 @@ namespace AutoGenerateCode
         private string codeSavePath;
 
         //提示信息
-        private string tipStates;
+        private string tipScriptStates;
         private string tipSelete;
         private MessageType msgSeleteType = MessageType.Info;
 
@@ -59,6 +59,12 @@ namespace AutoGenerateCode
             window.position = new Rect(400, 250, 1100, 720);
             window.Show();
         }
+        private void Awake()
+        {
+            EditorPrefs.SetBool(VARIABLEALL, true);
+            EditorPrefs.SetBool(PROPERTYALL, false);
+            EditorPrefs.SetBool(EVENTALL, false);
+        }
 
         void OnEnable()
         {
@@ -71,11 +77,23 @@ namespace AutoGenerateCode
             if (m_TreeViewState == null)
                 m_TreeViewState = new UITreeViewState();
 
-            //每次打开都会tree形态重新绘制 痛点 要把数据保存
+            //每次打开或者有脚本重新加载的时候 都会tree形态重新绘制 痛点 要把数据保存
             uiTreeView = new UITreeview(m_TreeViewState);
 
-            m_SearchField = new SearchField();
-            m_SearchField.downOrUpArrowKeyPressed += uiTreeView.SetFocusAndEnsureSelectedItem;
+             m_SearchField = new SearchField();
+             m_SearchField.downOrUpArrowKeyPressed += uiTreeView.SetFocusAndEnsureSelectedItem;
+        }
+
+        private void OnDestroy()
+        {
+            m_TreeViewState.DeleteDatas();
+        }
+
+        private void OnLostFocus()
+        {
+            //将当前数据保存
+            if (m_TreeViewState != null)
+                m_TreeViewState.SaveAllTreeItemData(uiTreeView);
         }
 
         #region OnGUI
@@ -86,7 +104,7 @@ namespace AutoGenerateCode
             //UI Tree view
             DrawTreeAndScriptUI();
 
-           //line 1
+            //line 1
             using (new GUILayout.HorizontalScope())
             {
                 if (Selection.activeGameObject == null)
@@ -104,12 +122,12 @@ namespace AutoGenerateCode
                 GUILayout.Space(3);
                 using (new GUILayout.VerticalScope(GUILayout.Width(treeviewWidth), GUILayout.Height(10)))
                 {
-                    EditorGUILayout.HelpBox("(双击Tree view中的对象可切换选择)   选择提示:" + tipSelete, msgSeleteType);
+                    EditorGUILayout.HelpBox("(双击对象可切换选择,F2可重命名)   选择提示:" + tipSelete, msgSeleteType);
                 }
                 GUILayout.Space(20);
                 using (new GUILayout.VerticalScope(GUILayout.Width(575), GUILayout.Height(10)))
                 {
-                    EditorGUILayout.HelpBox("代码提示:" + tipStates, MessageType.Info);
+                    EditorGUILayout.HelpBox("代码提示:" + tipScriptStates, MessageType.Info);
                 }
             }
 
@@ -162,10 +180,10 @@ namespace AutoGenerateCode
 
                     GUILayout.Space(8);
                     uiTreeView.linkPartentChild = GUILayout.Toggle(uiTreeView.linkPartentChild, "是否子父关联", GUILayout.Width(100), GUILayout.Height(30));
-                } 
+                }
                 #endregion
 
-                #region 代码预览按钮
+                #region 保存代码 代码预览 按钮
                 using (new GUILayout.HorizontalScope(GUILayout.Width(500)))
                 {
 
@@ -174,6 +192,11 @@ namespace AutoGenerateCode
                     {
                         codeSavePath = string.Empty;
                         codeStr = ScriptGenerator.StartScriptGenerate(uiTreeView);
+                        tipScriptStates = Helper.GetCurrentTime() + " 脚本生成时间";
+
+                        //将当前数据保存
+                        if (m_TreeViewState != null)
+                            m_TreeViewState.SaveAllTreeItemData(uiTreeView);
                     }
 
                     GUILayout.Space(15);
@@ -187,15 +210,14 @@ namespace AutoGenerateCode
                         codeSavePath = EditorUtility.SaveFilePanelInProject("选择保存文件夹", Selection.activeGameObject.name, "cs", "Please enter a file name to save ");
                         if (!string.IsNullOrEmpty(codeSavePath))
                         {
-                            tipStates = ScriptGenerator.SaveScript(codeStr, codeSavePath);
+                            tipScriptStates = ScriptGenerator.SaveScript(codeStr, codeSavePath);
                             ShowNotification(new GUIContent("脚本生成成功:" + codeSavePath));
-                            Helper.AwaitToDo(700, RemoveNotification);
+                            Helper.AwaitToDo(500, RemoveNotification);
                         }
                         else
                         {
                             Debug.Log(Helper.Log_UIGenerate + "脚本生成取消");
                         }
-
                     }
 
                     GUILayout.Space(15);
@@ -216,10 +238,12 @@ namespace AutoGenerateCode
                         if (target == null)
                         {
                             Selection.activeGameObject.AddComponent(scriptType);
-                            Debug.Log(Helper.Log_UIGenerate + "脚本绑定成功");
+                            tipScriptStates = Helper.GetCurrentTime() + " 脚本绑定成功";
+                            ShowNotification(new GUIContent("脚本绑定成功"));
+                            Helper.AwaitToDo(400, RemoveNotification);
+                            // Debug.Log(Helper.Log_UIGenerate + "脚本绑定成功");
                         }
                     }
-
                 }
                 #endregion
             }
@@ -229,16 +253,17 @@ namespace AutoGenerateCode
             using (new GUILayout.HorizontalScope())
             {
                 GUILayout.Space(10);
-                if (GUILayout.Button("加载选择对象", GUILayout.Width(100), GUILayout.Height(28)))
+                if (GUILayout.Button("重新加载选择对象", GUILayout.Width(150), GUILayout.Height(35)))
                 {
+                    m_TreeViewState.DeleteDatas();
                     uiTreeView.Reload();
                 }
 
-                GUILayout.Space(10);
+                GUILayout.Space(20);
                 string foldStr = isExpandAll ? "全折叠" : "全展开";
                 Color foldColor = isExpandAll ? Color.cyan : Color.yellow;
                 GUI.color = foldColor;
-                if (GUILayout.Button(foldStr, GUILayout.Width(80), GUILayout.Height(28)))
+                if (GUILayout.Button(foldStr, GUILayout.Width(120), GUILayout.Height(35)))
                 {
                     if (isExpandAll)
                         uiTreeView.CollapseAll();

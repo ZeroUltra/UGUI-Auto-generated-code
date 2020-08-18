@@ -1,0 +1,8 @@
+{
+    "name": "Code",
+    "references": [],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": []
+}
