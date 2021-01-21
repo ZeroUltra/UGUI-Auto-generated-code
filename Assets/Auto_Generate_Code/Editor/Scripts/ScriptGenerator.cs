@@ -23,7 +23,7 @@ namespace AutoGenerateCode
 
         //存放要添加事件的UI类型
         private static HashSet<string> hashUIEventType = new HashSet<string>() {
-            "Button", "Toggle", "InputField", "Dropdown","Slider","Scrollbar","ScrollRect"
+            "Button", "Toggle", "InputField", "Dropdown","Slider","Scrollbar","ScrollRect","ButtonPlus"
         };
 
 
@@ -122,42 +122,56 @@ namespace AutoGenerateCode
                     if (item.type == nameof(Button))
                     {
                         string methodName = $"{item.goName}_OnClick";
+                        methodName = methodName.Remove(0, 2); //移除m_
+                        sb.Append($"onClick.AddListener({methodName});\n");
+                        listMethodName.Add(methodName + "()");
+                    }
+                    else if (item.type == "ButtonPlus")
+                    {
+                        string methodName = $"{item.goName}_OnClick";
+                        methodName = methodName.Remove(0, 2); //移除m_
                         sb.Append($"onClick.AddListener({methodName});\n");
                         listMethodName.Add(methodName + "()");
                     }
                     else if (item.type == nameof(Toggle))
                     {
                         string methodName = $"{item.goName}_OnValueChanged";
+                        methodName = methodName.Remove(0, 2); //移除m_
                         sb.Append($"onValueChanged.AddListener({methodName});\n");
                         listMethodName.Add(methodName + "(bool isOn)");
                     }
                     else if (item.type == nameof(InputField))
                     {
                         string methodName = $"{item.goName}_OnValueChanged";
+                        methodName = methodName.Remove(0, 2); //移除m_
                         sb.Append($"onValueChanged.AddListener({methodName});\n");
                         listMethodName.Add(methodName + "(string arg)");
                     }
                     else if (item.type == nameof(Slider))
                     {
                         string methodName = $"{item.goName}_OnValueChanged";
+                        methodName = methodName.Remove(0, 2); //移除m_
                         sb.Append($"onValueChanged.AddListener({methodName});\n");
                         listMethodName.Add(methodName + "(float value)");
                     }
                     else if (item.type == nameof(Dropdown))
                     {
                         string methodName = $"{item.goName}_OnValueChanged";
+                        methodName = methodName.Remove(0, 2); //移除m_
                         sb.Append($"onValueChanged.AddListener({methodName});\n");
                         listMethodName.Add(methodName + "(int index)");
                     }
                     else if (item.type == nameof(Scrollbar))
                     {
                         string methodName = $"{item.goName}_OnValueChanged";
+                        methodName = methodName.Remove(0, 2); //移除m_
                         sb.Append($"onValueChanged.AddListener({methodName});\n");
                         listMethodName.Add(methodName + "(float value)");
                     }
                     else if (item.type == nameof(ScrollRect))
                     {
                         string methodName = $"{item.goName}_OnValueChanged";
+                        methodName = methodName.Remove(0, 2); //移除m_
                         sb.Append($"onValueChanged.AddListener({methodName});\n");
                         listMethodName.Add(methodName + "(Vector2 detal)");
                     }
